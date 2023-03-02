@@ -3,7 +3,7 @@
 
 This time -
 * It wasn't easy
-* I learned a lot while learning
+* I learned a lot
 * It was worth all the pain
   
 Thanks everyone who helped me learn!
