@@ -82,7 +82,7 @@ archs = {'alexnet'     :  9216,
          'vgg19'       : 25088}
 
 # function to build the neural network to classify the flowers
-def nn_artist(arch='vgg19', dp=0.5, num_hiddens=1024, lr=0.001):
+def nn_artist(arch='vgg19', dp=0.5, num_hiddens=1024, num_out=102, lr=0.001):
     '''
         Designs a neural network, creates a loss function, and a model optimizer.
         
@@ -90,6 +90,7 @@ def nn_artist(arch='vgg19', dp=0.5, num_hiddens=1024, lr=0.001):
         arch        (`string`)        <- model architecture [default : vgg19]
         dp          (`float` : [0-1]) <- dropout probability
         num_hiddens (`int`)           <- number of the units in 1st hidden layers
+        num_out     (`int`)           <- number of output units in the output layer
         lr          (`float`)         <- learning rate to assign to the model optimizer
 
         ___returns:
@@ -126,7 +127,7 @@ def nn_artist(arch='vgg19', dp=0.5, num_hiddens=1024, lr=0.001):
                                 ('fc2', nn.Linear(512, 256)),
                                 ('relu2', nn.ReLU()),
                                 ('drop2', nn.Dropout(dp)),
-                                ('fc3', nn.Linear(256, 102)),
+                                ('fc3', nn.Linear(256, num_out)),
                                 ('output', nn.LogSoftmax(dim=1))
                                 ]))
     
@@ -140,7 +141,7 @@ def nn_artist(arch='vgg19', dp=0.5, num_hiddens=1024, lr=0.001):
 # ----------------------------------------------------------------
 # function to train the nn model
 def train_model(model, criterion, optimizer, train_dataloader, valid_dataloader, arch='vgg19', 
-                num_epochs=30, print_every=32, num_hiddens=1024, lr=0.001, gpu=True):
+                num_epochs=30, print_every=32, num_hiddens=1024, num_out=102, lr=0.001, gpu=True):
     '''
         Creates and trains a model.
 
@@ -154,6 +155,7 @@ def train_model(model, criterion, optimizer, train_dataloader, valid_dataloader,
         num_epochs  (`int`)                    <- number of epochs to train [default : 10]
         print_every (`int`)                    <- the frequency to print the losses and accuracy [default : 32]
         num_hiddens (`int`)                    <- number of the units in 1st hidden layers
+        num_out     (`int`)                    <- number of output units in the output layer
         gpu         (`bool`)                   <- Train using GPU? [default : True]
 
         ___Returns:
@@ -161,7 +163,7 @@ def train_model(model, criterion, optimizer, train_dataloader, valid_dataloader,
 
     '''
 
-    model, criterion, optimizer,_ = nn_artist(arch, 0.5, num_hiddens, lr)
+    model, criterion, optimizer,_ = nn_artist(arch, 0.5, num_hiddens, num_out, lr)
     
     device = torch.device('cuda' if (gpu and torch.cuda.is_available()) else 'cpu')
     model.to(device)
@@ -251,7 +253,7 @@ def accuracy(model, test_dataloader, gpu=True):
 
 # ----------------------------------------------------------------
 # function to save the model as a .pth checkpoint
-def save_checkpoint(arch, model, optimizer, class_to_idx, num_hiddens=1024, checkpoint_path='checkpoint.pth'):
+def save_checkpoint(arch, model, optimizer, class_to_idx, num_hiddens=1024, num_epochs=40, checkpoint_path='checkpoint.pth'):
     '''
         Saves the model as .pth checkpoint at 'checkpoint.pth'
 
@@ -268,8 +270,8 @@ def save_checkpoint(arch, model, optimizer, class_to_idx, num_hiddens=1024, chec
 
     checkpoint = {'arch'       : arch,
                   'num_hiddens' : num_hiddens,
-                  'output_size' : 102,
-                  'num_epochs' : 40,
+                  'num_out' : len(class_to_idx),
+                  'num_epochs' : num_epochs,
                   'class_to_idx' : class_to_idx,
                   'classifier_state_dict' : model.classifier.state_dict(),
                   'optimizer_state_dict' : optimizer.state_dict()}
@@ -293,8 +295,9 @@ def load_model_optimizer(checkpoint_path='checkpoint.pth'):
     checkpoint = torch.load(checkpoint_path)
     arch = checkpoint['arch']
     num_hiddens = checkpoint['num_hiddens']
+    num_out = checkpoint['num_out']
 
-    model,_,optimizer,_ = nn_artist(arch, 0.5, num_hiddens)
+    model,_,optimizer,_ = nn_artist(arch, 0.5, num_hiddens, num_out)
     model.classifier.load_state_dict(checkpoint['classifier_state_dict'])
     model.class_to_idx = checkpoint['class_to_idx']
 

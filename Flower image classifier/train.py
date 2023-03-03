@@ -54,20 +54,23 @@ print('Data loaded!')
 # calling available architecture mapping
 archs = helper.archs
 
+# number of units in the output layer
+num_out = len(class_to_idx)
+
 # creating model, loss function, model optimizer, arch (unchanged/changed)
-flora, criterion, optimizer, arch = helper.nn_artist(arch, 0.5, num_hidden, lr)
+flora, criterion, optimizer, arch = helper.nn_artist(arch, 0.5, num_hidden, num_out, lr)
 print('Model created!')
 
 # training the model
-flora = helper.train_model(flora, criterion, optimizer, train_dataloader, 
-                           valid_dataloader, arch, num_epochs, 32, num_hidden, lr, gpu)
+flora = helper.train_model(flora, criterion, optimizer, train_dataloader, valid_dataloader,
+                           arch, num_epochs, 32, num_hidden, num_out, lr, gpu)
 print('Model trained!')
 
 # prdicting accuracy
 helper.accuracy(flora, test_dataloader, gpu)
 
 # saving various data in the checkpoint
-helper.save_checkpoint(arch, flora, optimizer, class_to_idx, num_hidden, save_dir)
+helper.save_checkpoint(arch, flora, optimizer, class_to_idx, num_hidden, num_epochs, save_dir)
 print('Checkpoint saved!')
 
 print('___End of train.py___')

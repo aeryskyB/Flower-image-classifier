@@ -29,7 +29,7 @@ parser.add_argument('--top_k', action='store', default=5, type=int)
 # 4. .json for real category names
 parser.add_argument('--category_names', action='store', default='cat_to_name.json')
 # 5. using GPU
-parser.add_argument('--gpu', action='store_false')
+parser.add_argument('--gpu', action='store_true')
 
 args = parser.parse_args()
 
@@ -52,11 +52,16 @@ print('Model loaded')
 
 # getting probabilities and classes
 ps, cs = helper.predict(image, flora, top_k, gpu)
+# moving to cpu
+device = torch.device('cpu')
+ps, cs = ps.to(device), cs.to(device)
 ps, cs = np.array(ps[0]), np.array(cs[0])
 print('Probabilities obtained.')
 
 # finding corresponding category to every class
-names = [cat_to_name[str(c+1)] for c in cs]
+idx_to_class = {i : c for c, i in flora.class_to_idx.items()}
+classes = [idx_to_class[c] for c in cs]
+names = [cat_to_name[c] for c in classes]
 
 # printing to the console
 for i in range(len(names)):
