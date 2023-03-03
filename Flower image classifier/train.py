@@ -23,7 +23,7 @@ parser.add_argument('data_dir', action='store')         # default='./flowers'
 # 2. path to save the the .pth checkpoint
 parser.add_argument('--save_dir', action='store', default='./checkpoint.pth')
 # 3. architecture for the model
-parser.add_argument('--arch', action='store', default='vgg19')
+parser.add_argument('--arch', action='store', default='vgg19', choices=['alexnet', 'densenet121', 'vgg19'])
 # 4. learning rate
 parser.add_argument('--learning_rate', action='store', default='0.001', type=float, dest='lr')
 # 5. number of hidden units of the first hidden layer
@@ -56,12 +56,12 @@ archs = helper.archs
 
 # creating model, loss function, model optimizer, arch (unchanged/changed)
 flora, criterion, optimizer, arch = helper.nn_artist(arch, 0.5, num_hidden, lr)
-print('Model creation done!')
+print('Model created!')
 
 # training the model
 flora = helper.train_model(flora, criterion, optimizer, train_dataloader, 
                            valid_dataloader, arch, num_epochs, 32, num_hidden, lr, gpu)
-print('Model training done!')
+print('Model trained!')
 
 # prdicting accuracy
 helper.accuracy(flora, test_dataloader, gpu)

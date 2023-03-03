@@ -25,7 +25,7 @@ def load_data(data_dir='./flower'):
 
         ___Returns:
         train_dataloader   (`torch.utils.data.DataLoader`) <- dataloader for training
-        valid_Dataloader (`torch.utils.data.DataLoader`)   <- dataloader for validation
+        valid_Dataloader   (`torch.utils.data.DataLoader`)   <- dataloader for validation
         test_dataloader    (`torch.utils.data.DataLoader`) <- dataloader for testing
         class_to_idx
 
@@ -76,7 +76,7 @@ def load_data(data_dir='./flower'):
     return train_dataloader, valid_dataloader, test_dataloader, train_data.class_to_idx
 
 # ----------------------------------------------------------------
-# mapping architecture to the its feature extractor's last convolution layer's `out_channels``
+# mapping architecture to the its feature extractor's last convolution layer's `out_channels`
 archs = {'alexnet'     :  9216,
          'densenet121' :  1024,
          'vgg19'       : 25088}
@@ -163,10 +163,8 @@ def train_model(model, criterion, optimizer, train_dataloader, valid_dataloader,
 
     model, criterion, optimizer,_ = nn_artist(arch, 0.5, num_hiddens, lr)
     
-    device = torch.device('cuda')
-
-    if gpu:
-        model.to(device)
+    device = torch.device('cuda' if (gpu and torch.cuda.is_available()) else 'cpu')
+    model.to(device)
     
     steps = 0
     running_loss = 0
@@ -175,9 +173,8 @@ def train_model(model, criterion, optimizer, train_dataloader, valid_dataloader,
         for inputs, labels in train_dataloader:
             steps += 1
             
-            # moving into GPU
-            if gpu:
-                inputs, labels = inputs.to(device), labels.to(device)
+            
+            inputs, labels = inputs.to(device), labels.to(device)
             
             # evaluating loss
             logps = model.forward(inputs)
@@ -198,7 +195,7 @@ def train_model(model, criterion, optimizer, train_dataloader, valid_dataloader,
                 # no backpropagation needed
                 with torch.no_grad():
                     for inputs, labels in valid_dataloader:
-                        inputs, labels = inputs.to('cuda'), labels.to('cuda')
+                        inputs, labels = inputs.to(device), labels.to(device)
 
                         logps = model.forward(inputs)
                         batch_loss = criterion(logps, labels)
@@ -239,14 +236,18 @@ def accuracy(model, test_dataloader, gpu=True):
     accuracy = 0
     with torch.no_grad():
         for inputs, labels in test_dataloader:
-            inputs, labels = inputs.to('cuda'), labels.to('cuda')
+            
+            device = torch.device('cuda' if (gpu and torch.cuda.is_available()) else 'cpu')
+            model.to(device)
+            inputs, labels = inputs.to(device), labels.to(device)
+
             logps = model.forward(inputs)
             ps = torch.exp(logps)
             top_p, top_class = ps.topk(1, dim=1)
             equals = (top_class == labels.view(*top_class.shape)).type(torch.FloatTensor)
             accuracy += torch.mean(equals).item()
 
-    print(f'Accuracy: {accuracy/len(test_dataloader):0.3%}')
+    print(f'Accuracy on the test data: {accuracy/len(test_dataloader):0.3%}')
 
 # ----------------------------------------------------------------
 # function to save the model as a .pth checkpoint
@@ -332,8 +333,9 @@ def predict(image_path, model, topk=5, gpu=False):
     img = img.unsqueeze_(0)
     # reference project 1: classifier.py
 
-    if gpu:
-        img = img.to('cuda')
+    device = torch.device('cuda' if (gpu and torch.cuda.is_available()) else 'cpu')
+    model.to(device)
+    img = img.to(device)
     
     with torch.no_grad():
         logps = model.forward(img)

@@ -43,6 +43,7 @@ gpu = args.gpu
 # getting the map of index to categories from the .json file
 with open(category_names, 'r') as f:
     cat_to_name = json.load(f)
+print('Categories loaded.')
 
 # ----------------------------------------------------------------
 # model loading
