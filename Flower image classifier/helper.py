@@ -1,6 +1,7 @@
-# project 1's database and the .ipynb file for the 1st part of project 2 
+# project 1's database + the .ipynb file for project 2, part 1
 # helped a lot to create this file
 
+# ----------------------------------------------------------------
 import torch
 from torch import nn, optim
 from torchvision import datasets, transforms, models
@@ -39,31 +40,31 @@ def load_data(data_dir='./flower'):
 
     # * Applying transforms
     train_transform = transforms.Compose([transforms.Resize(255),
-                                        transforms.CenterCrop(224),
-                                        transforms.RandomHorizontalFlip(),
-                                        transforms.RandomVerticalFlip(),
-                                        transforms.RandomRotation(degrees=(0, 30)),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize([0.485, 0.456, 0.406], 
-                                                            [0.229, 0.224, 0.225])])
+                                          transforms.CenterCrop(224),
+                                          transforms.RandomHorizontalFlip(),
+                                          transforms.RandomVerticalFlip(),
+                                          transforms.RandomRotation(degrees=(0, 30)),
+                                          transforms.ToTensor(),
+                                          transforms.Normalize([0.485, 0.456, 0.406], 
+                                                               [0.229, 0.224, 0.225])])
     ## Not performing transforms like Grayscale, Jitter etc. that might effect color quality heavily
     ## Unfortunately this version of torchvision doesn't support RandomPerspective
     ## And I'm avoiding upgrading which might be incompatible with other modules
 
     valid_transform = transforms.Compose([transforms.Resize(255),
-                                        transforms.CenterCrop(224),
-                                        transforms.RandomHorizontalFlip(),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize([0.485, 0.456, 0.406], 
-                                                            [0.229, 0.224, 0.225])])
+                                          transforms.CenterCrop(224),
+                                          transforms.RandomHorizontalFlip(),
+                                          transforms.ToTensor(),
+                                          transforms.Normalize([0.485, 0.456, 0.406], 
+                                                               [0.229, 0.224, 0.225])])
 
     test_transform  = transforms.Compose([transforms.Resize(255),
-                                        transforms.CenterCrop(224),
-                                        transforms.ToTensor(),
-                                        transforms.Normalize([0.485, 0.456, 0.406], 
-                                                            [0.229, 0.224, 0.225])])
+                                          transforms.CenterCrop(224),
+                                          transforms.ToTensor(),
+                                          transforms.Normalize([0.485, 0.456, 0.406], 
+                                                               [0.229, 0.224, 0.225])])
 
-
+    # obtaininig data and applying transformation
     train_data = datasets.ImageFolder(train_dir, transform=train_transform)
     valid_data = datasets.ImageFolder(valid_dir, transform=valid_transform)
     test_data  = datasets.ImageFolder(test_dir, transform=test_transform)
@@ -76,7 +77,7 @@ def load_data(data_dir='./flower'):
     return train_dataloader, valid_dataloader, test_dataloader, train_data.class_to_idx
 
 # ----------------------------------------------------------------
-# mapping architecture to the its feature extractor's last convolution layer's `out_channels`
+# mapping architecture to its feature extractor's last convolution layer's `out_channels`
 archs = {'alexnet'     :  9216,
          'densenet121' :  1024,
          'vgg19'       : 25088}
@@ -94,10 +95,10 @@ def nn_artist(arch='vgg19', dp=0.5, num_hiddens=1024, num_out=102, lr=0.001):
         lr          (`float`)         <- learning rate to assign to the model optimizer
 
         ___returns:
-            model       (`torchvision.models` : (pretrained)) <- model for our flower classifier
-            criterion   (`torch.nn` Loss Function) <- Loss function
-            optimizer   (`torch.optim` Optimizer) <- optimizer to update weights of the model
-            arch        (`string`)        <- model architecture {might be altered}
+        model       (`torchvision.models` : (pretrained)) <- model for our flower classifier
+        criterion   (`torch.nn` Loss Function) <- Loss function
+        optimizer   (`torch.optim` Optimizer) <- optimizer to update weights of the model
+        arch        (`string`)        <- model architecture {might be altered}
     '''
     
     if arch == 'alexnet':
@@ -152,10 +153,11 @@ def train_model(model, criterion, optimizer, train_dataloader, valid_dataloader,
         training dataloader
         validation dataloader
         arch        (`str`)                    <- model architecture
-        num_epochs  (`int`)                    <- number of epochs to train [default : 10]
+        num_epochs  (`int`)                    <- number of epochs to train [default : 30]
         print_every (`int`)                    <- the frequency to print the losses and accuracy [default : 32]
         num_hiddens (`int`)                    <- number of the units in 1st hidden layers
         num_out     (`int`)                    <- number of output units in the output layer
+        lr          (`float`)                  <- learning rate
         gpu         (`bool`)                   <- Train using GPU? [default : True]
 
         ___Returns:
@@ -258,11 +260,13 @@ def save_checkpoint(arch, model, optimizer, class_to_idx, num_hiddens=1024, num_
         Saves the model as .pth checkpoint at 'checkpoint.pth'
 
         ___Inputs:
-        arch        (`string`)                            <- model architecture
-        model       (`torchvision.models` : (pretrained)) <- model for our flower classifier
-        optimizer   (`torch.optim` Optimizer)             <- optimizer to update weights of the model
+        arch        (`string`)                <- model architecture
+        model       (`torchvision.models`)    <- model for our flower classifier
+        optimizer   (`torch.optim` Optimizer) <- optimizer to update weights of the model
         class_to_idx
-        num_hiddens (`int`)                               <- number of the units in 1st hidden layers
+        num_hiddens (`int`)                   <- number of the units in 1st hidden layers
+        num_epochs  (`int`)                   <- number of epochs to train [default : 10]
+        checkpoint_path (`str`)               <- path to the checkpoint
 
         ___Return:
         None
@@ -309,19 +313,21 @@ def load_model_optimizer(checkpoint_path='checkpoint.pth'):
 # function to process image
 def process_image(path):
     ''' Scales, crops, and normalizes a PIL image for a PyTorch model,
-        returns an torch Tensor
+        returns a `torch.Tensor`
     '''
 
+    # creating a `PIL.Image` object
     pil_img = Image.open(path)
-    
+
     transforms_to_do = transforms.Compose([transforms.Resize(256),
                                           transforms.CenterCrop(224),
-                                          transforms.ToTensor(),
+                                          transforms.ToTensor(),                            # converting to tensor
                                           transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                                std=[0.229, 0.224, 0.225])])
-    # ToTensor automatically does all the work w/o passing through an extra np.array
+
     img = transforms_to_do(pil_img)
-    
+
+    # `torch.Tensor` automatically does all the work w/o passing through an extra np.array (mentioned by the project rubric)
     return img
 
 # ----------------------------------------------------------------
@@ -329,21 +335,23 @@ def process_image(path):
 def predict(image_path, model, topk=5, gpu=False):
     ''' Predict the class (or classes) of an image using a trained deep learning model.
     '''
-    
+
     # gets the torch tensor for the image
     img = process_image(image_path)
     # resize the tensor (add dimension for batch)
     img = img.unsqueeze_(0)
-    # reference project 1: classifier.py
+    # reference: project 1 - classifier.py
 
     device = torch.device('cuda' if (gpu and torch.cuda.is_available()) else 'cpu')
     model.to(device)
     img = img.to(device)
-    
+
+    # find probabilities
     with torch.no_grad():
         logps = model.forward(img)
     ps = torch.exp(logps)
     top_ps, top_cs = ps.topk(topk, dim=1)
+    
     return top_ps, top_cs
 
 # ----------------------------------------------------------------
